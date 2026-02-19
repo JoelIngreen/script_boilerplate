@@ -1,0 +1,55 @@
+stages:
+  - build
+  - deploy
+
+variables:
+  IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+
+# ── BUILD ──────────────────────────────────────────────────────────────────────
+docker-build:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - docker build -t $IMAGE_TAG .
+    - docker push $IMAGE_TAG
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+
+# ── DEPLOY (ejemplo con SSH) ───────────────────────────────────────────────────
+deploy-production:
+  stage: deploy
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache openssh-client
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | ssh-add -
+    - mkdir -p ~/.ssh && ssh-keyscan $DEPLOY_HOST >> ~/.ssh/known_hosts
+  script:
+    - |
+      ssh $DEPLOY_USER@$DEPLOY_HOST "
+        docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY &&
+        docker pull $IMAGE_TAG &&
+        docker stop my-ts-app || true &&
+        docker rm my-ts-app   || true &&
+        docker run -d \
+          --name my-ts-app \
+          --restart unless-stopped \
+          -p 3000:3000 \
+          -e POSTGRES_USER=$POSTGRES_USER \
+          -e POSTGRES_PASSWORD=$POSTGRES_PASSWORD \
+          -e POSTGRES_HOST=$POSTGRES_HOST \
+          -e POSTGRES_PORT=$POSTGRES_PORT \
+          -e POSTGRES_DB=$POSTGRES_DB \
+          -e SCHEDULE_STR='$SCHEDULE_STR' \
+          -e ENABLE_DATABASE=$ENABLE_DATABASE \
+          $IMAGE_TAG
+      "
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  environment:
+    name: production

@@ -1,0 +1,50 @@
+services:
+
+  app:
+    build: .
+    container_name: script_boilerplate
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      POSTGRES_USER:     ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_HOST:     postgres          # nombre del servicio dentro de la red
+      POSTGRES_PORT:     ${POSTGRES_PORT:-5432}
+      POSTGRES_DB:       ${POSTGRES_DB}
+      SCHEDULE_STR:      ${SCHEDULE_STR:-* * * * *}
+      ENABLE_DATABASE:   ${ENABLE_DATABASE:-1}
+      TEXT:              ${TEXT:-TEST SCRIPT}
+      PORT:              3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: my-ts-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER:     ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB:       ${POSTGRES_DB}
+    ports:
+      - "5432:5432"           # expuesto solo para herramientas locales (DBeaver, etc.)
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:
+
+networks:
+  app-network:
+    driver: bridge
