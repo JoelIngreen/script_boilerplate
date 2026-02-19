@@ -1,6 +1,30 @@
 # My TS App
 
-Servicio backend construido con **Node.js + TypeScript + Express** que expone una API REST, ejecuta tareas programadas mediante cron y se conecta a una base de datos **PostgreSQL**. Incluye soporte para modo mock, logging estructurado y pipeline CI/CD con GitLab y Docker.
+Servicio backend construido con **Node.js + TypeScript + Express** que expone una API REST, ejecuta tareas programadas mediante cron y se conecta a una base de datos **PostgreSQL**. Incluye soporte para modo mock, logging estructurado y pipeline CI/CD con GitHub Actions y Docker.
+
+---
+
+## ⚡ Inicio rápido: 
+
+```bash
+# 1. Clonar el repositorio
+git clone https://github.com/JoelIngreen/script_boilerplate.git
+cd script_boilerplate
+
+# 2. Configurar variables de entorno
+cp .env.example .env
+# Edita .env con tus valores, o deja ENABLE_DATABASE=0 para modo mock sin Postgres
+
+# 3. Levantar todo
+docker compose up --build
+```
+
+API disponible en `http://localhost:3000/api/health`
+
+> 💡 Si no tienes Postgres, simplemente pon `ENABLE_DATABASE=0` en el `.env` y arranca solo la app:
+> ```bash
+> docker compose up --build app
+> ```
 
 ---
 
@@ -12,7 +36,7 @@ Servicio backend construido con **Node.js + TypeScript + Express** que expone un
 │   ├── config/
 │   │   └── env.ts              # Lectura y exportación de variables de entorno
 │   ├── db/
-│   │   └── postgres.ts         # Pool de conexión y queries (con modo mock)
+│   │   └── postgres.ts         # Pool de conexión, queries y mock data
 │   ├── logger/
 │   │   └── logger.ts           # Logger Winston con colores y rotación de ficheros
 │   ├── scheduler/
@@ -20,10 +44,16 @@ Servicio backend construido con **Node.js + TypeScript + Express** que expone un
 │   ├── routes/
 │   │   └── index.ts            # Endpoints Express bajo /api
 │   └── index.ts                # Entry point: servidor + scheduler
+├── docker/
+│   └── init.sql                # Script de inicialización de la base de datos
 ├── log/                        # Logs generados en runtime (ignorado por git)
 ├── dist/                       # Compilación TypeScript (ignorado por git)
 ├── .env.example                # Plantilla de variables de entorno
-├── .gitlab-ci.yml              # Pipeline CI/CD
+├── .github/
+│   └── workflows/
+│       └── docker.yml          # Pipeline CI/CD GitHub Actions
+├── .gitlab-ci.yml              # Pipeline CI/CD GitLab
+├── docker-compose.yml
 ├── Dockerfile
 ├── package.json
 └── tsconfig.json
@@ -33,16 +63,16 @@ Servicio backend construido con **Node.js + TypeScript + Express** que expone un
 
 ## 🔧 Stack técnico
 
-| Responsabilidad   | Librería                |
-|-------------------|-------------------------|
-| Servidor HTTP     | `express`               |
-| Base de datos     | `pg` (node-postgres)    |
-| Tareas programadas| `node-cron`             |
-| Logging           | `winston`               |
-| Variables de entorno | `dotenv`             |
-| Excel / reportes  | `exceljs`               |
-| Lenguaje          | TypeScript 5            |
-| Runtime           | Node.js 22              |
+| Responsabilidad      | Librería              |
+|----------------------|-----------------------|
+| Servidor HTTP        | `express`             |
+| Base de datos        | `pg` (node-postgres)  |
+| Tareas programadas   | `node-cron`           |
+| Logging              | `winston`             |
+| Variables de entorno | `dotenv`              |
+| Excel / reportes     | `exceljs`             |
+| Lenguaje             | TypeScript 5          |
+| Runtime              | Node.js 22            |
 
 ---
 
@@ -54,17 +84,19 @@ Copia `.env.example` como `.env` y rellena los valores:
 cp .env.example .env
 ```
 
-| Variable            | Descripción                                          | Default       |
-|---------------------|------------------------------------------------------|---------------|
-| `POSTGRES_USER`     | Usuario de la base de datos                          | —             |
-| `POSTGRES_PASSWORD` | Contraseña del usuario                               | —             |
-| `POSTGRES_HOST`     | Host o IP del servidor Postgres                      | —             |
-| `POSTGRES_PORT`     | Puerto de Postgres                                   | `5432`        |
-| `POSTGRES_DB`       | Nombre de la base de datos                           | —             |
-| `ENABLE_DATABASE`   | `0` para deshabilitar Postgres y usar datos mock     | `1`           |
-| `SCHEDULE_STR`      | Expresión cron para el job programado                | `* * * * *`   |
-| `TEXT`              | Texto que imprime el servidor al arrancar            | `TEST SCRIPT` |
-| `PORT`              | Puerto en el que escucha Express                     | `3000`        |
+| Variable            | Descripción                                                | Default        |
+|---------------------|------------------------------------------------------------|----------------|
+| `POSTGRES_USER`     | Usuario de la base de datos                                | —              |
+| `POSTGRES_PASSWORD` | Contraseña del usuario                                     | —              |
+| `POSTGRES_HOST`     | Host o IP del servidor Postgres                            | —              |
+| `POSTGRES_PORT`     | Puerto de Postgres                                         | `5432`         |
+| `POSTGRES_DB`       | Nombre de la base de datos                                 | —              |
+| `ENABLE_DATABASE`   | `0` para deshabilitar Postgres y usar datos mock           | `1`            |
+| `DB_SCHEMA`         | Esquema de la tabla a consultar                            | `public`       |
+| `DB_TABLE`          | Nombre de la tabla a consultar                             | `sensor_data`  |
+| `SCHEDULE_STR`      | Expresión cron para el job programado (5 o 6 campos)       | `* * * * *`    |
+| `TEXT`              | Texto que imprime el servidor al arrancar                  | `TEST SCRIPT`  |
+| `PORT`              | Puerto en el que escucha Express                           | `3000`         |
 
 > ⚠️ **Nunca** subas el fichero `.env` al repositorio.
 
@@ -82,27 +114,38 @@ El servidor arrancará igualmente y las llamadas a la base de datos devolverán 
 
 ---
 
-## 🚀 Ejecución en local
+## 🗃️ Inicialización de la base de datos
+
+El fichero `docker/init.sql` se ejecuta automáticamente la **primera vez** que el contenedor de Postgres arranca con el volumen vacío. Crea la tabla `sensor_data` e inserta datos de prueba.
+
+Si necesitas reinicializar la base de datos desde cero:
+
+```bash
+docker compose down -v        # elimina contenedores y volumen
+docker compose up --build     # vuelve a crear todo desde cero
+```
+
+Para cambiar el esquema o tabla que usa la app, edita el `.env`:
+
+```dotenv
+DB_SCHEMA=public
+DB_TABLE=sensor_data
+```
+
+---
+
+## 🚀 Ejecución en local sin Docker
 
 ### Requisitos
 - Node.js 22+
 - npm 10+
 - PostgreSQL (opcional si `ENABLE_DATABASE=0`)
 
-### Pasos
-
 ```bash
-# 1. Instalar dependencias
 npm install
-
-# 2. Configurar variables de entorno
 cp .env.example .env
-
-# 3. Arrancar en modo desarrollo (hot-reload)
-npm run dev
+npm run dev       # hot-reload con tsx
 ```
-
-El servidor quedará disponible en `http://localhost:3000`.
 
 ---
 
@@ -110,17 +153,17 @@ El servidor quedará disponible en `http://localhost:3000`.
 
 Base URL: `/api`
 
-| Método | Ruta      | Descripción                                          |
-|--------|-----------|------------------------------------------------------|
-| `GET`  | `/health` | Comprueba que el servidor está activo                |
-| `GET`  | `/data`   | Devuelve registros entre dos fechas                  |
+| Método | Ruta      | Descripción                         |
+|--------|-----------|-------------------------------------|
+| `GET`  | `/health` | Comprueba que el servidor está activo |
+| `GET`  | `/data`   | Devuelve registros entre dos fechas |
 
 ### `GET /api/data`
 
 **Query params:**
 
-| Param  | Tipo   | Ejemplo                    |
-|--------|--------|----------------------------|
+| Param  | Tipo     | Ejemplo                  |
+|--------|----------|--------------------------|
 | `from` | ISO 8601 | `2024-01-01T00:00:00Z`   |
 | `to`   | ISO 8601 | `2024-01-02T00:00:00Z`   |
 
@@ -139,16 +182,15 @@ Base URL: `/api`
 
 ## ⏱️ Scheduler
 
-Al arrancar, el servidor registra un job programado que se ejecuta según la expresión cron definida en `SCHEDULE_STR`. El job consulta los datos de las últimas 24 horas y los registra en el log.
+Al arrancar, el servidor registra un job programado que se ejecuta según la expresión cron definida en `SCHEDULE_STR`. Soporta expresiones de **5 campos** (minutos) y **6 campos** (con segundos).
 
-Ejemplos de expresiones cron válidas:
-
-| Expresión      | Frecuencia            |
-|----------------|-----------------------|
-| `* * * * *`    | Cada minuto           |
-| `0 * * * *`    | Cada hora             |
-| `0 6 * * *`    | Cada día a las 06:00  |
-| `0 6 * * 1`    | Cada lunes a las 06:00|
+| Expresión          | Frecuencia             |
+|--------------------|------------------------|
+| `* * * * *`        | Cada minuto            |
+| `*/5 * * * * *`    | Cada 5 segundos        |
+| `0 * * * *`        | Cada hora              |
+| `0 6 * * *`        | Cada día a las 06:00   |
+| `0 6 * * 1`        | Cada lunes a las 06:00 |
 
 El scheduler se detiene limpiamente al recibir `SIGINT` o `SIGTERM` (Ctrl+C o parada del contenedor).
 
@@ -156,13 +198,13 @@ El scheduler se detiene limpiamente al recibir `SIGINT` o `SIGTERM` (Ctrl+C o pa
 
 ## 📋 Logging
 
-Los logs se emiten en consola con colores y se guardan en la carpeta `log/` con rotación. Los mensajes consecutivos idénticos se suprimen para evitar ruido.
+Los logs se emiten en consola con colores y se guardan en `log/` con rotación. Los mensajes consecutivos idénticos se suprimen para evitar ruido.
 
-| Nivel     | Color         | Cuándo usarlo                        |
-|-----------|---------------|--------------------------------------|
-| `info`    | Verde         | Operaciones normales                 |
-| `warn`    | Amarillo      | Situaciones anómalas no críticas     |
-| `error`   | Rojo          | Fallos que requieren atención        |
+| Nivel   | Color    | Cuándo usarlo                    |
+|---------|----------|----------------------------------|
+| `info`  | Verde    | Operaciones normales             |
+| `warn`  | Amarillo | Situaciones anómalas no críticas |
+| `error` | Rojo     | Fallos que requieren atención    |
 
 ---
 
@@ -174,33 +216,34 @@ Los logs se emiten en consola con colores y se guardan en la carpeta `log/` con 
 docker build -t my-ts-app:latest .
 ```
 
-### Ejecución
+El Dockerfile usa **multi-stage build**: la primera etapa instala todas las dependencias y compila TypeScript; la segunda copia solo `dist/` y las dependencias de producción, generando una imagen más ligera.
+
+### Ejecución con docker compose
 
 ```bash
-docker run --rm \
-  -e POSTGRES_USER=demo \
-  -e POSTGRES_PASSWORD=secret \
-  -e POSTGRES_HOST=db.example.local \
-  -e POSTGRES_PORT=5432 \
-  -e POSTGRES_DB=mydb \
-  -e SCHEDULE_STR="0 6 * * *" \
-  -e ENABLE_DATABASE=1 \
-  -p 3000:3000 \
-  my-ts-app:latest
+docker compose up --build
 ```
+
+Levanta Postgres y la app en la misma red. Postgres incluye healthcheck y la app espera a que esté listo antes de arrancar.
 
 ---
 
-## 🚀 Pipeline GitLab CI/CD
+## 🚀 CI/CD
 
-El fichero `.gitlab-ci.yml` define una fase `build` que:
+### GitHub Actions
 
-1. Arranca Docker in Docker (`docker:dind`).
-2. Hace login en el Container Registry del proyecto.
-3. Construye la imagen etiquetada con la rama actual.
-4. Publica la imagen en el registry.
+El workflow `.github/workflows/docker.yml` define dos jobs:
 
-Con cada `git push`, GitLab construirá y publicará automáticamente la imagen en:
+- **`check`**: ejecuta en todo push y PR. Valida el build de TypeScript y que la imagen Docker compila correctamente. Es obligatorio para poder hacer merge a `main`.
+- **`build-and-push`**: solo en push a `main` o `develop`. Publica la imagen en GitHub Container Registry (`ghcr.io`).
+
+```
+develop (push) → check → PR a main → check → merge → build-and-push
+```
+
+### GitLab CI/CD
+
+El fichero `.gitlab-ci.yml` define las fases `build` y `deploy`. Con cada push construye y publica la imagen en el Container Registry de GitLab:
 
 ```
 registry.gitlab.com/<namespace>/<project>:<branch>
@@ -210,8 +253,8 @@ registry.gitlab.com/<namespace>/<project>:<branch>
 
 ## 📜 Scripts npm
 
-| Comando         | Descripción                                      |
-|-----------------|--------------------------------------------------|
-| `npm run dev`   | Desarrollo con hot-reload via `tsx`              |
-| `npm run build` | Compila TypeScript a JavaScript en `dist/`       |
-| `npm start`     | Ejecuta el build compilado                       |
+| Comando         | Descripción                                |
+|-----------------|--------------------------------------------|
+| `npm run dev`   | Desarrollo con hot-reload via `tsx`        |
+| `npm run build` | Compila TypeScript a JavaScript en `dist/` |
+| `npm start`     | Ejecuta el build compilado                 |
