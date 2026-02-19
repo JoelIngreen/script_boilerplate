@@ -7,3 +7,32 @@
 2026-02-18 17:05:01 | info  | app | TEXT: hola mundo
 2026-02-18 17:05:01 | info  | app | Scheduler configured for 'scheduledJob' with schedule: '* * * * *'
 2026-02-18 17:05:01 | info  | app | Starting scheduler. Press Ctrl+C to exit.
+2026-02-19 13:13:30 | warn  | app | ENABLE_DATABASE=0 — running without PostgreSQL, mock data will be used.
+2026-02-19 13:13:30 | info  | app | Server listening on port 3000
+2026-02-19 13:13:30 | info  | app | TEXT: hola mundo
+2026-02-19 13:13:30 | info  | app | Scheduler configured for 'scheduledJob' with schedule: '*/5 * * * * *'
+2026-02-19 13:13:30 | info  | app | Starting scheduler. Press Ctrl+C to exit.
+2026-02-19 13:13:30 | info  | app | Running job: scheduledJob
+2026-02-19 13:13:30 | warn  | app | queryExample called in mock mode (2026-02-18T12:13:30.240Z → 2026-02-19T12:13:30.240Z)
+2026-02-19 13:13:30 | info  | app | Scheduled job fetched 2 rows.
+2026-02-19 13:13:35 | info  | app | Running job: scheduledJob
+2026-02-19 13:13:35 | warn  | app | queryExample called in mock mode (2026-02-18T12:13:35.389Z → 2026-02-19T12:13:35.389Z)
+2026-02-19 13:13:35 | info  | app | Scheduled job fetched 2 rows.
+2026-02-19 13:13:40 | info  | app | Running job: scheduledJob
+2026-02-19 13:13:40 | warn  | app | queryExample called in mock mode (2026-02-18T12:13:40.562Z → 2026-02-19T12:13:40.562Z)
+2026-02-19 13:13:40 | info  | app | Scheduled job fetched 2 rows.
+2026-02-19 13:13:45 | info  | app | Running job: scheduledJob
+2026-02-19 13:13:45 | warn  | app | queryExample called in mock mode (2026-02-18T12:13:45.616Z → 2026-02-19T12:13:45.616Z)
+2026-02-19 13:13:45 | info  | app | Scheduled job fetched 2 rows.
+2026-02-19 13:13:50 | info  | app | Running job: scheduledJob
+2026-02-19 13:13:50 | warn  | app | queryExample called in mock mode (2026-02-18T12:13:50.715Z → 2026-02-19T12:13:50.715Z)
+2026-02-19 13:13:50 | info  | app | Scheduled job fetched 2 rows.
+2026-02-19 13:13:55 | info  | app | Running job: scheduledJob
+2026-02-19 13:13:55 | warn  | app | queryExample called in mock mode (2026-02-18T12:13:55.802Z → 2026-02-19T12:13:55.802Z)
+2026-02-19 13:13:55 | info  | app | Scheduled job fetched 2 rows.
+2026-02-19 13:14:00 | info  | app | Running job: scheduledJob
+2026-02-19 13:14:00 | warn  | app | queryExample called in mock mode (2026-02-18T12:14:00.827Z → 2026-02-19T12:14:00.827Z)
+2026-02-19 13:14:00 | info  | app | Scheduled job fetched 2 rows.
+2026-02-19 13:14:05 | info  | app | Running job: scheduledJob
+2026-02-19 13:14:05 | warn  | app | queryExample called in mock mode (2026-02-18T12:14:05.888Z → 2026-02-19T12:14:05.888Z)
+2026-02-19 13:14:05 | info  | app | Scheduled job fetched 2 rows.
