@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { queryExample } from '../db/postgres';
+import { queryExample } from '../db/prisma';
 import { getLogger } from '../logger/logger';
 
 const router = Router();

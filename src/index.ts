@@ -2,7 +2,7 @@ import express from 'express';
 import { TEXT } from './config/env';
 import { getLogger } from './logger/logger';
 import { JobScheduler } from './scheduler/jobScheduler';
-import { queryExample } from './db/postgres';
+import { queryExample } from './db/prisma';
 import routes from './routes';
 
 const log = getLogger('index');
