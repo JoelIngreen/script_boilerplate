@@ -2,7 +2,7 @@ services:
 
   app:
     build: .
-    container_name: script_boilerplate
+    container_name: my-ts-app
     restart: unless-stopped
     ports:
       - "3000:3000"
@@ -34,6 +34,7 @@ services:
       - "5432:5432"           # expuesto solo para herramientas locales (DBeaver, etc.)
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s

@@ -22,6 +22,7 @@ export class JobScheduler {
 
     // node-cron usa formato de 5 campos (igual que crontab estándar)
     this.task = cron.schedule(SCHEDULE_STR, async () => {
+
       log.info(`Running job: ${this.jobFn.name}`);
       try {
         await this.jobFn();
