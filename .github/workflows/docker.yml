@@ -14,7 +14,35 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  # ── CHECK: valida que la imagen compila correctamente ─────────────────────
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript build check
+        run: npm run build
+
+      - name: Docker build check (sin push)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+
+  # ── BUILD & PUSH: solo si los checks pasan y es push a main o develop ─────
   build-and-push:
+    needs: check
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -44,39 +72,10 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          push: ${{ github.event_name != 'pull_request' }}
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-  # ── DEPLOY (opcional, solo en main) ─────────────────────────────────────────
-  # Descomenta este job cuando tengas los secrets configurados en GitHub
-  # deploy:
-  #   needs: build-and-push
-  #   runs-on: ubuntu-latest
-  #   if: github.ref == 'refs/heads/main'
-  #   environment: production
-
-  #   steps:
-  #     - name: Deploy via SSH
-  #       uses: appleboy/ssh-action@v1
-  #       with:
-  #         host: ${{ secrets.DEPLOY_HOST }}
-  #         username: ${{ secrets.DEPLOY_USER }}
-  #         key: ${{ secrets.SSH_PRIVATE_KEY }}
-  #         script: |
-  #           docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
-  #           docker pull ghcr.io/${{ github.repository }}:main
-  #           docker stop my-ts-app || true
-  #           docker rm my-ts-app   || true
-  #           docker run -d \
-  #             --name my-ts-app \
-  #             --restart unless-stopped \
-  #             -p 3000:3000 \
-  #             -e POSTGRES_USER=${{ secrets.POSTGRES_USER }} \
-  #             -e POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} \
-  #             -e POSTGRES_HOST=${{ secrets.POSTGRES_HOST }} \
-  #             -e POSTGRES_PORT=${{ secrets.POSTGRES_PORT }} \
-  #             -e POSTGRES_DB=${{ secrets.POSTGRES_DB }} \
-  #             -e SCHEDULE_STR=${{ secrets.SCHEDULE_STR }} \
-  #             -e ENABLE_DATABASE=1 \
-  #             ghcr.io/${{ github.repository }}:main
+  # ── DEPLOY ────────────────────────────────────────────────────────────────────
+  # TODO: descomentar cuando tengas DEPLOY_HOST, DEPLOY_USER y SSH_PRIVATE_KEY
+  #       configurados en GitHub → Settings → Secrets and variables → Actions
