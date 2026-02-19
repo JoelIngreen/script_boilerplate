@@ -1,0 +1,14 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "postgresql"
+}
+model SensorData {
+  id          Int      @id @default(autoincrement())
+  timestamp   DateTime @default(now()) @db.Timestamptz
+  temperature Decimal? @db.Decimal(5, 2)
+  humidity    Decimal? @db.Decimal(5, 2)
+
+  @@map("sensor_data")
+}
