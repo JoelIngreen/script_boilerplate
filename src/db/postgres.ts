@@ -1,10 +1,9 @@
 import { Pool } from 'pg';
-import { DB_CONFIG, ENABLE_DATABASE } from '../config/env';
+import { DB_CONFIG, ENABLE_DATABASE, DB_SCHEMA, DB_TABLE } from '../config/env';
 import { getLogger } from '../logger/logger';
 
 const log = getLogger('postgres');
 
-// El pool solo se crea si la DB está habilitada
 const pool: Pool | null = ENABLE_DATABASE ? new Pool(DB_CONFIG) : null;
 
 pool?.on('error', (err) => {
@@ -22,7 +21,6 @@ export interface SensorRow {
   humidity: number;
 }
 
-// Datos mock para desarrollo sin Postgres
 const MOCK_ROWS: SensorRow[] = [
   { id: 1, timestamp: new Date(), temperature: 22.5, humidity: 60 },
   { id: 2, timestamp: new Date(), temperature: 23.1, humidity: 58 },
@@ -36,7 +34,7 @@ export async function queryExample(dateInit: Date, dateEnd: Date): Promise<Senso
 
   const sql = `
     SELECT id, timestamp, temperature, humidity
-    FROM schema.table
+    FROM ${DB_SCHEMA}.${DB_TABLE}
     WHERE timestamp BETWEEN $1 AND $2
   `;
   try {
