@@ -34,6 +34,9 @@ jobs:
       - name: Generate Prisma Client
         # Prisma 7.2+: prisma generate funciona sin DATABASE_URL definida
         run: npx prisma generate
+        env:
+          DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
+
 
       - name: TypeScript build check
         run: npm run build
